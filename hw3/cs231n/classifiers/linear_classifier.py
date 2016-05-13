@@ -33,40 +33,25 @@ class LinearClassifier:
             # lazily initialize W
             self.W = np.random.randn(num_classes, dim) * 0.001
 
+        best_loss = -1
+        best_W = self.W
         # Run stochastic gradient descent to optimize W
         loss_history = []
         for it in range(num_iters):
-            ###################################################################
-            # TODO:                                                                 #
-            # Sample batch_size elements from the training data and their           #
-            # corresponding labels to use in this round of gradient descent.        #
-            # Store the data in X_batch and their corresponding labels in           #
-            # y_batch; after sampling X_batch should have shape (dim, batch_size)   #
-            # and y_batch should have shape (batch_size,)                           #
-            #                                                                       #
-            # Hint: Use np.random.choice to generate indices. Sampling with         #
-            # replacement is faster than sampling without replacement.              #
-            ###################################################################
-
-            ###################################################################
-            #                       END OF YOUR CODE                                #
-            ###################################################################
-
-            # evaluate loss and gradient
-
-            # perform parameter update
-            ###################################################################
-            # TODO:                                                                 #
-            # Update the weights using the gradient and the learning rate.          #
-            ###################################################################
-
-            ###################################################################
-            #                       END OF YOUR CODE                                #
-            ###################################################################
-            loss = 0
+            idx = np.random.choice(np.arange(num_train), batch_size)
+            X_batch = X[:, idx]
+            y_batch = y[idx]
+            loss, dW = self.loss(X_batch, y_batch, reg)
+            if best_loss == -1 or loss < best_loss:
+                best_loss = loss
+                best_W = self.W
+            self.W -= learning_rate * dW
+            loss_history.append(loss)
             if verbose and it % 100 == 0:
-                print('iteration %d / %d: loss %f' % (it, num_iters, loss))
+                print('iteration %d / %d: loss %f, best_loss: %f' %
+                      (it, num_iters, loss, best_loss))
 
+        self.W = best_W
         return loss_history
 
     def predict(self, X):
@@ -80,18 +65,15 @@ class LinearClassifier:
         Returns:
         - y_pred: Predicted labels for the data in X. y_pred is a 1-dimensional
           array of length N, and each element is an integer giving the predicted
-          class.
+          class. xsq``
         """
 
-        #######################################################################
-        # TODO:                                                                   #
-        # Implement this method. Store the predicted labels in y_pred.            #
-        #######################################################################
-        y_pred = 0
-        #######################################################################
-        #                           END OF YOUR CODE                              #
-        #######################################################################
+        y_pred = np.argmax(self.W.dot(X), axis=0)
         return y_pred
+
+    def predict_prob(self, X):
+        y_pred = self.W.dot(X)
+        return np.exp(y_pred)/np.sum(np.exp(y_pred), axis=0)
 
     def loss(self, X_batch, y_batch, reg):
         """

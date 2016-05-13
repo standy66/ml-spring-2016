@@ -7,29 +7,34 @@ def svm_loss_naive(W, X, y, reg):
     Inputs:
     - W: C x D array of weights
     - X: D x N array of data. Data are D-dimensional columns
-    - y: 1-dimensional array of length N with labels 0...K-1, for K classes
+    - y: 1-dimensional array of length N with labels 0...C-1, for C classes
     - reg: (float) regularization strength
     Returns:
     a tuple of:
     - loss as single float
     - gradient with respect to weights W; an array of same shape as W
     """
-    dW = np.zeros(W.shape)  # initialize the gradient as zero
+    classes = W.shape[0]
+    n = X.shape[1]
+    dW = np.zeros(W.shape)
     loss = 0
 
-    ##########################################################################
-    # TODO:                                                                     #
-    # Compute the gradient of the loss function and store it dW.                #
-    # Rather that first computing the loss and then computing the derivative,   #
-    # it may be simpler to compute the derivative at the same time that the     #
-    # loss is being computed. As a result you may need to modify some of the    #
-    # code above to compute the gradient.                                       #
-    ##########################################################################
+    predict = W.dot(X)
 
-    # Right now the loss is a sum over all training examples, but we want it
-    # to be an average instead so we divide by num_train.
+    for i in range(n):
+        for c in range(classes):
+            if c == y[i]:
+                continue
+            margin = 1 + predict[c][i] - predict[y[i]][i]
+            if margin > 0:
+                loss += margin
+                dW[c] += X.T[i]
+                dW[y[i]] -= X.T[i]
+    dW /= n
+    loss /= n
 
-    # Add regularization to the loss.
+    dW += 2 * reg * W
+    loss += reg * np.sum(W ** 2)
     return loss, dW
 
 
@@ -39,29 +44,14 @@ def svm_loss_vectorized(W, X, y, reg):
 
     Inputs and outputs are the same as svm_loss_naive.
     """
-    loss = 0.0
-    dW = np.zeros(W.shape)  # initialize the gradient as zero
+    dW = 2 * reg * W
+    n = X.shape[1]
+    predict = W.dot(X)
+    margin = 1 + predict - predict[y, np.arange(n)]
+    margin[margin <= 0] = 0
+    loss = np.sum(margin) / n + reg * np.sum(W ** 2) - 1
+    margin[margin > 0] = 1
+    margin[y, np.arange(n)] = 1 - np.sum(margin, axis=0)
+    dW += margin.dot(X.T) / n
 
-    ##########################################################################
-    # TODO:                                                                     #
-    # Implement a vectorized version of the structured SVM loss, storing the    #
-    # result in loss.                                                           #
-    ##########################################################################
-
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
-    ##########################################################################
-    # TODO:                                                                     #
-    # Implement a vectorized version of the gradient for the structured SVM     #
-    # loss, storing the result in dW.                                           #
-    #                                                                           #
-    # Hint: Instead of computing the gradient from scratch, it may be easier    #
-    # to reuse some of the intermediate values that you used to compute the     #
-    # loss.                                                                     #
-    ##########################################################################
-
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
     return loss, dW
